@@ -2,41 +2,72 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 
 	"github.com/mocbotau/api-join-sound/internal/database"
 	"github.com/mocbotau/api-join-sound/internal/handlers"
+	"github.com/mocbotau/api-join-sound/internal/middleware"
+	"github.com/mocbotau/api-join-sound/internal/utils"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Error loading the .env file: %v... continuing", err)
+	}
+
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
-		dbPath = "./data/sounds.db"
+		dbPath = "./data/main.db"
 	}
 
-	if err := os.MkdirAll("./data", 0755); err != nil {
+	soundsFilePath := os.Getenv("SOUNDS_PATH")
+	if soundsFilePath == "" {
+		soundsFilePath = "./data/sounds"
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8081"
+	}
+
+	if auth0Domain := os.Getenv("AUTH0_DOMAIN"); auth0Domain == "" {
+		log.Fatalf("AUTH0_DOMAIN is required")
+	}
+
+	if auth0Audience := os.Getenv("AUTH0_AUDIENCE"); auth0Audience == "" {
+		log.Fatalf("AUTH0_AUDIENCE is required")
+	}
+
+	// this folder should be created by the container/kubernetes by default
+	if err := os.MkdirAll(soundsFilePath, 0666); err != nil {
 		log.Fatal("Failed to create data directory:", err)
-	}
-
-	if err := os.MkdirAll("./files", 0755); err != nil {
-		log.Fatal("Failed to create files directory:", err)
 	}
 
 	db, err := database.NewSQLiteDB(dbPath)
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
-	defer db.Close()
 
-	handler := handlers.NewHandler(db)
+	sqlDB, err := db.DB.DB()
+	if err != nil {
+		log.Fatal("Failed to get underlying sql.DB:", err)
+	}
+
+	defer func() {
+		_ = sqlDB.Close()
+	}()
+
+	handler := handlers.NewHandler(db, soundsFilePath)
 
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type")
 
 		if c.Request.Method == "OPTIONS" {
@@ -47,17 +78,26 @@ func main() {
 		c.Next()
 	})
 
-	v1 := r.Group("/api/v1")
+	r.Use(func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, utils.MAX_PAYLOAD_SIZE)
+		c.Next()
+	})
+
+	v1Public := r.Group("/api/v1")
 	{
-		v1.GET("/ping", handler.Ping)
-		v1.POST("/upload", handler.UploadFiles)
-		v1.GET("/file/:fileId", handler.GetFile)
-		v1.GET("/files/:guildId/:userId", handler.GetUserFiles)
+		v1Public.GET("/ping", handler.Ping)
+
+		v1Public.GET("/sound/:soundId", handler.GetSound)
+		v1Public.GET("/sounds/:guildId/:userId", handler.GetUserSounds)
+		v1Public.GET("/settings/:guildId/:userId", handler.GetUserSettings)
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8081"
+	v1Private := r.Group("/api/v1/", middleware.EnsureValidToken())
+	{
+		v1Private.DELETE("/sound/:soundId", middleware.EnsureResourceOwnership(db), handler.DeleteSound)
+
+		v1Private.POST("/sounds/:guildId/:userId", middleware.EnsureUserAuthorization(), handler.UploadUserSounds)
+		v1Private.PATCH("/settings/:guildId/:userId", middleware.EnsureUserAuthorization(), handler.UpdateUserSettings)
 	}
 
 	log.Printf("Server starting on port %s", port)

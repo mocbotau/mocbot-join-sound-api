@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../infra-helm-charts/charts/generic-app/values.schema.json
+
+environment: "prod"
+version: "${COMMIT_SHA}"
+
+deployments:
+  - name: "join-sound-api"
+    image: "${DOCKERHUB_USERNAME}/${DOCKERHUB_REPO}:${REPO_NAME}-prod"
+    service:
+      port: 8081
+    environment:
+      - AUTH0_AUDIENCE: "${AUTH0_AUDIENCE}"
+      - AUTH0_DOMAIN: "${AUTH0_DOMAIN}"
+      - GIN_MODE: "release"
+    ingress:
+      subdomain: "join-sound-api"
+    readinessProbe:
+      httpGet:
+        path: "/"
+        port: 8081
+    volumes:
+      - name: "join-sound-api-data"
+        size: "10Gi"
+        mountPath: "/app/data"
