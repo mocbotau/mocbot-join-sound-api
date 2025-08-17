@@ -1,6 +1,6 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25 AS builder
 
-RUN apk add --no-cache gcc musl-dev sqlite-dev
+RUN apt-get update && apt-get install -y gcc libc-dev libsqlite3-dev
 
 WORKDIR /app
 
@@ -9,21 +9,24 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o api ./cmd/api
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    go build -o api ./cmd/api
 
-FROM alpine:latest
+FROM debian:bookworm-slim AS release
 
-RUN apk --no-cache add ca-certificates sqlite
-WORKDIR /root/
+RUN apt-get update && apt-get install -y ca-certificates sqlite3 && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 10001 -s /bin/bash appuser
+
+WORKDIR /app
 
 COPY --from=builder /app/api .
 
-RUN mkdir -p /root/data /root/files
+RUN mkdir -p data/sounds && chown -R appuser:appuser /app
+
+USER appuser
 
 EXPOSE 8081
-
-ENV GIN_MODE=release
-ENV DB_PATH=/root/data/sounds.db
-ENV PORT=8081
 
 CMD ["./api"]
