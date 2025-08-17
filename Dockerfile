@@ -23,7 +23,7 @@ WORKDIR /app
 
 COPY --from=builder /app/api .
 
-RUN mkdir -p data/sounds && chown -R appuser:appuser /app
+RUN mkdir -p data/sounds && chown -R appuser:appuser /app && chown appuser:appuser /app/data && chown appuser:appuser /app/data/sounds
 
 USER appuser
 
