@@ -17,15 +17,15 @@ FROM debian:bookworm-slim AS release
 
 RUN apt-get update && apt-get install -y ca-certificates sqlite3 && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -u 10001 -s /bin/bash appuser
+# RUN useradd -m -u 10001 -s /bin/bash appuser
 
 WORKDIR /app
 
 COPY --from=builder /app/api .
 
-RUN mkdir -p data/sounds && chown -R appuser:appuser /app && chown appuser:appuser /app/data && chown appuser:appuser /app/data/sounds
+RUN mkdir -p data/sounds
 
-USER appuser
+# USER appuser
 
 EXPOSE 8081
 
