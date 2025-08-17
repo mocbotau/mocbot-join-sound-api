@@ -8,15 +8,18 @@ deployments:
     image: "${DOCKERHUB_USERNAME}/${DOCKERHUB_REPO}:${REPO_NAME}-prod"
     service:
       port: 8081
+      targetPort: 8081
     environment:
-      - AUTH0_AUDIENCE: "${AUTH0_AUDIENCE}"
-      - AUTH0_DOMAIN: "${AUTH0_DOMAIN}"
-      - GIN_MODE: "release"
+      AUTH0_AUDIENCE: "${AUTH0_AUDIENCE}"
+      AUTH0_DOMAIN: "${AUTH0_DOMAIN}"
+      DB_PATH: "./data/main.db"
+      GIN_MODE: "release"
+      SOUNDS_PATH: "./data/sounds"
     ingress:
       subdomain: "join-sound-api"
     readinessProbe:
       httpGet:
-        path: "/"
+        path: "/api/v1/ping"
         port: 8081
     volumes:
       - name: "join-sound-api-data"
