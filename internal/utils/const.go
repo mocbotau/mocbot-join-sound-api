@@ -1,6 +1,8 @@
 package utils
 
-const MAX_AUDIO_DURATION = 5
+import "time"
+
+const MAX_AUDIO_DURATION = 5 * time.Second
 
 const MAX_PAYLOAD_SIZE = 50 << 20        // 50 MB
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024 // 10 MB

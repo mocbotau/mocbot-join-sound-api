@@ -126,7 +126,7 @@ func checkAudioDuration(file multipart.File, kind string) error {
 
 	duration := time.Duration(float64(streamer.Len())/float64(format.SampleRate)) * time.Second
 	if duration > MAX_AUDIO_DURATION {
-		return fmt.Errorf("audio too long: %v (max %vs)", duration, MAX_AUDIO_DURATION)
+		return fmt.Errorf("audio too long: %v (max %v)", duration, MAX_AUDIO_DURATION)
 	}
 
 	return nil

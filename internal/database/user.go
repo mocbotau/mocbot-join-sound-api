@@ -40,7 +40,7 @@ func (db *DB) CreateOrGetUser(guildID, userID int64) (*models.User, error) {
 // GetUserByUserGuildID retrieves a user by their userGuildID
 func (db *DB) GetUserByUserGuildID(id string) (*models.User, error) {
 	var user models.User
-	err := db.Where("user_guild_id = ?", id).First(&user).Error
+	err := db.Where("id = ?", id).First(&user).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
