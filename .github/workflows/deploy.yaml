@@ -15,6 +15,12 @@ jobs:
       environment: ${{ steps.set-environment.outputs.env }}
       repo-name: ${{ steps.extractor.outputs.repo_name }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -30,9 +36,12 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
+          context: .
           push: true
           tags: |
             ${{ secrets.ORG_DOCKERHUB_USERNAME }}/${{ secrets.ORG_DOCKERHUB_REPO }}:${{ steps.extractor.outputs.repo_name }}-prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     name: Deploy to Kubernetes
