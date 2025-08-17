@@ -12,3 +12,5 @@ var ALLOWED_TYPES = map[string]string{
 	"audio/mpeg": ".mp3",
 	"audio/wav":  ".wav",
 }
+
+var ALLOWED_MODES = []string{"single", "random"}

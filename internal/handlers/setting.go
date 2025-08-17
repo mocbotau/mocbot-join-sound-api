@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -68,6 +70,11 @@ func (h *Handler) UpdateUserSettings(c *gin.Context) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Sound does not belong to this user"})
 			return
 		}
+	}
+
+	if req.Mode != nil && !slices.Contains(utils.ALLOWED_MODES, *req.Mode) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Mode can only be one of: " + strings.Join(utils.ALLOWED_MODES, ", ")})
+		return
 	}
 
 	setting, err := h.db.UpdateUserSetting(user.ID, &req)
