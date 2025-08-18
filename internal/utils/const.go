@@ -11,8 +11,8 @@ const MAX_FILES_PER_USER = 5
 const MAX_FILENAME_LEN = 255
 
 var ALLOWED_TYPES = map[string]string{
-	"audio/mpeg": ".mp3",
-	"audio/wav":  ".wav",
+	"audio/mpeg":  ".mp3",
+	"audio/x-wav": ".wav",
 }
 
 var ALLOWED_MODES = []string{"single", "random"}

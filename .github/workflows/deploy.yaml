@@ -40,9 +40,6 @@ jobs:
           push: true
           tags: |
             ${{ secrets.ORG_DOCKERHUB_USERNAME }}/${{ secrets.ORG_DOCKERHUB_REPO }}:${{ steps.extractor.outputs.repo_name }}-prod
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
-          load: true
 
   deploy:
     name: Deploy to Kubernetes

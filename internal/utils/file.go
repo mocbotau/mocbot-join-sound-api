@@ -112,7 +112,7 @@ func checkAudioDuration(file multipart.File, kind string) error {
 	switch kind {
 	case "audio/mpeg":
 		streamer, format, err = mp3.Decode(file)
-	case "audio/wav":
+	case "audio/x-wav":
 		streamer, format, err = wav.Decode(file)
 	default:
 		return nil
