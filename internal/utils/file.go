@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -18,7 +19,7 @@ import (
 	"github.com/mocbotau/api-join-sound/internal/models"
 )
 
-// ValidateFileUpload checks if the uploaded file meets the required criteria
+// ValidateFileUpload checks if the uploaded file meets the required criteria.
 func ValidateFileUpload(fileHeader *multipart.FileHeader) (string, error) {
 	filename, err := validateFileMetadata(fileHeader)
 	if err != nil {
@@ -27,10 +28,12 @@ func ValidateFileUpload(fileHeader *multipart.FileHeader) (string, error) {
 
 	file, err := fileHeader.Open()
 	if err != nil {
-		return "", fmt.Errorf("cannot open uploaded file: %v", err)
+		return "", fmt.Errorf("cannot open uploaded file: %w", err)
 	}
 
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	kind, err := detectFileType(file, filename)
 	if err != nil {
@@ -44,14 +47,14 @@ func ValidateFileUpload(fileHeader *multipart.FileHeader) (string, error) {
 	return kind, nil
 }
 
-// validateFileMetadata validates basic file metadata, and sanities the file path
+// validateFileMetadata validates basic file metadata, and sanities the file path.
 func validateFileMetadata(fileHeader *multipart.FileHeader) (string, error) {
-	if fileHeader.Size > MAX_UPLOAD_SIZE {
-		return "", fmt.Errorf("file too large: %s (max %d bytes)", fileHeader.Filename, MAX_UPLOAD_SIZE)
+	if fileHeader.Size > MaxUploadSize {
+		return "", fmt.Errorf("file too large: %s (max %d bytes)", fileHeader.Filename, MaxUploadSize)
 	}
 
-	if len(fileHeader.Filename) > MAX_FILENAME_LEN {
-		return "", fmt.Errorf("filename too long: %s (max %d characters)", fileHeader.Filename, MAX_FILENAME_LEN)
+	if len(fileHeader.Filename) > MaxFilenameLen {
+		return "", fmt.Errorf("filename too long: %s (max %d characters)", fileHeader.Filename, MaxFilenameLen)
 	}
 
 	if fileHeader.Size == 0 {
@@ -67,46 +70,48 @@ func validateFileMetadata(fileHeader *multipart.FileHeader) (string, error) {
 	return filepath.Base(filename), nil
 }
 
-// detectFileType determines the MIME type of the uploaded file by reading the actual data
+// detectFileType determines the MIME type of the uploaded file by reading the actual data.
 func detectFileType(file multipart.File, filename string) (string, error) {
 	buffer := make([]byte, 8192)
 
 	n, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
-		return "", fmt.Errorf("cannot read file content: %v", err)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return "", fmt.Errorf("cannot read file content: %w", err)
 	}
 
 	buffer = buffer[:n]
 
 	kind, err := filetype.Match(buffer)
 	if err != nil {
-		return "", fmt.Errorf("cannot determine file type: %v", err)
+		return "", fmt.Errorf("cannot determine file type: %w", err)
 	}
 
 	if kind == filetype.Unknown {
 		return "", fmt.Errorf("unknown or unsupported file type")
 	}
 
-	if !slices.Contains(slices.Collect(maps.Keys(ALLOWED_TYPES)), kind.MIME.Value) {
+	if !slices.Contains(slices.Collect(maps.Keys(AllowedTypes)), kind.MIME.Value) {
 		return "", fmt.Errorf("unsupported file type: %s (detected: %s)", filepath.Ext(filename), kind.MIME.Value)
 	}
 
 	ext := strings.ToLower(filepath.Ext(filename))
-	if expected, ok := ALLOWED_TYPES[kind.MIME.Value]; !ok || expected != ext {
+	if expected, ok := AllowedTypes[kind.MIME.Value]; !ok || expected != ext {
 		return "", fmt.Errorf("file type mismatch: %s (expected: %s, detected: %s)", ext, expected, kind.MIME.Value)
 	}
 
 	return kind.MIME.Value, nil
 }
 
-// checkAudioDuration will restrict the audio duration to a maximum limit
+// checkAudioDuration will restrict the audio duration to a maximum limit.
 func checkAudioDuration(file multipart.File, kind string) error {
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return fmt.Errorf("cannot rewind file for duration check: %v", err)
+		return fmt.Errorf("cannot rewind file for duration check: %w", err)
 	}
 
 	var streamer beep.StreamSeekCloser
+
 	var format beep.Format
+
 	var err error
 
 	switch kind {
@@ -119,39 +124,43 @@ func checkAudioDuration(file multipart.File, kind string) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("cannot decode audio file: %v", err)
+		return fmt.Errorf("cannot decode audio file: %w", err)
 	}
 
-	defer streamer.Close()
+	defer func() {
+		_ = streamer.Close()
+	}()
 
 	duration := time.Duration(float64(streamer.Len())/float64(format.SampleRate)) * time.Second
-	if duration > MAX_AUDIO_DURATION {
-		return fmt.Errorf("audio too long: %v (max %v)", duration, MAX_AUDIO_DURATION)
+	if duration > MaxAudioDuration {
+		return fmt.Errorf("audio too long: %v (max %v)", duration, MaxAudioDuration)
 	}
 
 	return nil
 }
 
-// GenerateInternalFilename creates a unique internal filename based on the provided ID and MIME type
+// GenerateInternalFilename creates a unique internal filename based on the provided ID and MIME type.
 func GenerateInternalFilename(id, mimeType string) string {
-	return fmt.Sprintf("%s%s", id, ALLOWED_TYPES[mimeType])
+	return fmt.Sprintf("%s%s", id, AllowedTypes[mimeType])
 }
 
-// BuildBulkUploadResponse creates a structured response for bulk upload operations
+// BuildBulkUploadResponse creates a structured response for bulk upload operations.
 func BuildBulkUploadResponse(totalFiles int, successfulFiles []*models.UploadResponse, failedFiles []*models.FileError) models.BulkUploadResponse {
 	successCount := len(successfulFiles)
 	failureCount := len(failedFiles)
 
 	var status string
+
 	var message string
 
-	if successCount == totalFiles {
+	switch {
+	case successCount == totalFiles:
 		status = "success"
 		message = fmt.Sprintf("All %d files uploaded successfully!", totalFiles)
-	} else if successCount > 0 {
+	case successCount > 0:
 		status = "partial"
 		message = fmt.Sprintf("%d of %d files uploaded successfully", successCount, totalFiles)
-	} else {
+	default:
 		status = "failure"
 		message = "No files were uploaded successfully"
 	}

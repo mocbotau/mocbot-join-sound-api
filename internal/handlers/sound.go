@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -24,7 +25,7 @@ type fileUploader struct {
 	user              *models.User
 }
 
-// GetSound retrieves a sound by its global ID
+// GetSound retrieves a sound by its global ID.
 func (h *Handler) GetSound(c *gin.Context) {
 	soundID := c.Param("soundId")
 	if soundID == "" {
@@ -39,10 +40,12 @@ func (h *Handler) GetSound(c *gin.Context) {
 	}
 
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", sound.OriginalName))
+	c.Header("Content-Type", sound.MimeType)
+	c.Header("X-Content-Type-Options", "nosniff")
 	c.File(fmt.Sprintf("%s/%s", h.soundsFilePath, sound.InternalFilename))
 }
 
-// DeleteSound deletes a sound given its global ID
+// DeleteSound deletes a sound given its global ID.
 func (h *Handler) DeleteSound(c *gin.Context) {
 	soundID := c.Param("soundId")
 	if soundID == "" {
@@ -51,7 +54,7 @@ func (h *Handler) DeleteSound(c *gin.Context) {
 	}
 
 	deletedSound, newSound, err := h.db.DeleteSound(soundID)
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Sound not found"})
 		return
 	} else if err != nil {
@@ -72,7 +75,7 @@ func (h *Handler) DeleteSound(c *gin.Context) {
 	})
 }
 
-// GetUserSounds retrieves all sounds for a given user in a given guild
+// GetUserSounds retrieves all sounds for a given user in a given guild.
 func (h *Handler) GetUserSounds(c *gin.Context) {
 	guildID, userID, err := utils.GetUserGuildID(c)
 	if err != nil {
@@ -91,7 +94,7 @@ func (h *Handler) GetUserSounds(c *gin.Context) {
 	})
 }
 
-// UploadUserSounds handles the upload of sounds for a given user in a given guild
+// UploadUserSounds handles the upload of sounds for a given user in a given guild.
 func (h *Handler) UploadUserSounds(c *gin.Context) {
 	guildID, userID, err := utils.GetUserGuildID(c)
 	if err != nil {
@@ -111,8 +114,8 @@ func (h *Handler) UploadUserSounds(c *gin.Context) {
 		return
 	}
 
-	if len(files) > utils.MAX_FILES_PER_USER {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Can't upload more than %d files at once", utils.MAX_FILES_PER_USER)})
+	if len(files) > utils.MaxFilesPerUser {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Can't upload more than %d files at once", utils.MaxFilesPerUser)})
 		return
 	}
 
@@ -168,8 +171,8 @@ func (fu *fileUploader) processBulkUpload(c *gin.Context, files []*multipart.Fil
 }
 
 func (fu *fileUploader) uploadSingleFile(c *gin.Context, file *multipart.FileHeader) (models.UploadResponse, error) {
-	if fu.currentSoundCount >= utils.MAX_FILES_PER_USER {
-		return models.UploadResponse{}, fmt.Errorf("maximum file limit of %d reached per user", utils.MAX_FILES_PER_USER)
+	if fu.currentSoundCount >= utils.MaxFilesPerUser {
+		return models.UploadResponse{}, fmt.Errorf("maximum file limit of %d reached per user", utils.MaxFilesPerUser)
 	}
 
 	mimeType, err := utils.ValidateFileUpload(file)
@@ -191,7 +194,11 @@ func (fu *fileUploader) uploadSingleFile(c *gin.Context, file *multipart.FileHea
 
 	sound, err := fu.db.CreateSound(fu.user.ID, file.Filename, internalFilename, mimeType)
 	if err != nil {
-		os.Remove(filePath)
+		removeErr := os.Remove(filePath)
+		if removeErr != nil {
+			return models.UploadResponse{}, fmt.Errorf("failed to remove uploaded file: %w", removeErr)
+		}
+
 		return models.UploadResponse{}, fmt.Errorf("failed to store file record: %w", err)
 	}
 

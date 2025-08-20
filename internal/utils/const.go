@@ -2,17 +2,28 @@ package utils
 
 import "time"
 
-const MAX_AUDIO_DURATION = 5 * time.Second
+// MaxAudioDuration is the maximum duration for audio files that we permit users to upload.
+const MaxAudioDuration = 5 * time.Second
 
-const MAX_PAYLOAD_SIZE = 50 << 20        // 50 MB
-const MAX_UPLOAD_SIZE = 10 * 1024 * 1024 // 10 MB
+const (
+	// MaxPayloadSize is the maximum size for request payloads.
+	MaxPayloadSize = 50 << 20 // 50 MB
+	// MaxUploadSize is the maximum size for individual file uploads.
+	MaxUploadSize = 10 * 1024 * 1024 // 10 MB
+)
 
-const MAX_FILES_PER_USER = 5
-const MAX_FILENAME_LEN = 255
+const (
+	// MaxFilesPerUser is the maximum number of files a user can upload.
+	MaxFilesPerUser = 5
+	// MaxFilenameLen is the maximum length of uploaded file names.
+	MaxFilenameLen = 255
+)
 
-var ALLOWED_TYPES = map[string]string{
+// AllowedTypes is a map of allowed audio file types and their corresponding extensions.
+var AllowedTypes = map[string]string{
 	"audio/mpeg":  ".mp3",
 	"audio/x-wav": ".wav",
 }
 
-var ALLOWED_MODES = []string{"single", "random"}
+// AllowedModes is a list of allowed playback modes.
+var AllowedModes = []string{"single", "random"}

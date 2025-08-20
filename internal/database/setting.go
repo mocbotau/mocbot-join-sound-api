@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -8,9 +9,9 @@ import (
 	"github.com/mocbotau/api-join-sound/internal/models"
 )
 
-// UpdateUserSetting updates user settings
-func (db *DB) UpdateUserSetting(userId string, req *models.UpdateSettingsRequest) (*models.Setting, error) {
-	setting, err := db.getCreateSettings(userId)
+// UpdateUserSetting updates user settings.
+func (db *DB) UpdateUserSetting(userID string, req *models.UpdateSettingsRequest) (*models.Setting, error) {
+	setting, err := db.getCreateSettings(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +31,7 @@ func (db *DB) UpdateUserSetting(userId string, req *models.UpdateSettingsRequest
 	return setting, nil
 }
 
-// GetOrCreateUserSetting retrieves or creates user settings if they don't already exist
+// GetOrCreateUserSetting retrieves or creates user settings if they don't already exist.
 func (db *DB) GetOrCreateUserSetting(guildID, userID int64) (*models.Setting, error) {
 	user, err := db.CreateOrGetUser(guildID, userID)
 	if err != nil {
@@ -45,7 +46,6 @@ func (db *DB) GetOrCreateUserSetting(guildID, userID int64) (*models.Setting, er
 	err = db.
 		Where("user_guild_id = ?", user.ID).
 		First(setting).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (db *DB) getCreateSettings(userGuildID string) (*models.Setting, error) {
 
 	err := db.Where("user_guild_id = ?", userGuildID).First(&setting).Error
 
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		newSetting := &models.Setting{
 			UserGuildID: userGuildID,
 		}

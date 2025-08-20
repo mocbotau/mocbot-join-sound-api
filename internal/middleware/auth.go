@@ -21,18 +21,18 @@ import (
 	"github.com/mocbotau/api-join-sound/internal/models"
 )
 
-// CustomClaims contains custom data we want from the token.
+// CustomClaims contains custom data we want from the token..
 type CustomClaims struct {
 	Scope string `json:"scope"`
 }
 
-// Validate does nothing for this example, but we need
-// it to satisfy validator.CustomClaims interface.
-func (c CustomClaims) Validate(ctx context.Context) error {
+// Validate does nothing for this example, but we need.
+// it to satisfy validator.CustomClaims interface..
+func (c CustomClaims) Validate(_ context.Context) error {
 	return nil
 }
 
-// EnsureValidToken is a middleware that will check the validity of our JWT.
+// EnsureValidToken is a middleware that will check the validity of our JWT..
 func EnsureValidToken() gin.HandlerFunc {
 	issuerURL, err := url.Parse("https://" + os.Getenv("AUTH0_DOMAIN") + "/")
 	if err != nil {
@@ -57,12 +57,12 @@ func EnsureValidToken() gin.HandlerFunc {
 		log.Fatalf("Failed to set up the jwt validator")
 	}
 
-	errorHandler := func(w http.ResponseWriter, r *http.Request, err error) {
+	errorHandler := func(w http.ResponseWriter, _ *http.Request, err error) {
 		log.Printf("Encountered error while validating JWT: %v", err)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"message":"Failed to validate JWT."}`))
+		_, _ = w.Write([]byte(`{"message":"Failed to validate JWT."}`))
 	}
 
 	middleware := jwtmiddleware.New(
@@ -73,7 +73,7 @@ func EnsureValidToken() gin.HandlerFunc {
 	return adapter.Wrap(middleware.CheckJWT)
 }
 
-// ExtractUserIDFromJWT extracts the Discord user ID from the JWT token's subject field
+// ExtractUserIDFromJWT extracts the Discord user ID from the JWT token's subject field.
 func extractUserIDFromJWT(c *gin.Context) (int64, error) {
 	token := c.Request.Context().Value(jwtmiddleware.ContextKey{})
 	if token == nil {
@@ -89,6 +89,7 @@ func extractUserIDFromJWT(c *gin.Context) (int64, error) {
 	}
 
 	discordUserID := parts[len(parts)-1]
+
 	userID, err := strconv.ParseInt(discordUserID, 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("invalid user ID in token: %w", err)
@@ -97,13 +98,14 @@ func extractUserIDFromJWT(c *gin.Context) (int64, error) {
 	return userID, nil
 }
 
-// EnsureUserAuthorization checks that the JWT user matches the requested user ID
+// EnsureUserAuthorization checks that the JWT user matches the requested user ID.
 func EnsureUserAuthorization() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jwtUserID, err := extractUserIDFromJWT(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Failed to extract user ID from token"})
 			c.Abort()
+
 			return
 		}
 
@@ -112,12 +114,14 @@ func EnsureUserAuthorization() gin.HandlerFunc {
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID parameter"})
 				c.Abort()
+
 				return
 			}
 
 			if jwtUserID != requestedUserID {
 				c.JSON(http.StatusForbidden, gin.H{"error": "You can only access your own resources"})
 				c.Abort()
+
 				return
 			}
 		}
@@ -127,13 +131,14 @@ func EnsureUserAuthorization() gin.HandlerFunc {
 	}
 }
 
-// EnsureResourceOwnership checks ownership for resource-based routes (e.g., sound ID)
+// EnsureResourceOwnership checks ownership for resource-based routes (e.g., sound ID).
 func EnsureResourceOwnership(db *database.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jwtUserID, err := extractUserIDFromJWT(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Failed to extract user ID from token"})
 			c.Abort()
+
 			return
 		}
 
@@ -142,6 +147,7 @@ func EnsureResourceOwnership(db *database.DB) gin.HandlerFunc {
 			if err != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Sound not found"})
 				c.Abort()
+
 				return
 			}
 
@@ -150,12 +156,14 @@ func EnsureResourceOwnership(db *database.DB) gin.HandlerFunc {
 			if user, err = db.GetUserByUserGuildID(sound.UserGuildID); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify ownership"})
 				c.Abort()
+
 				return
 			}
 
 			if jwtUserID != user.UserID {
 				c.JSON(http.StatusForbidden, gin.H{"error": "You can only access your own resources"})
 				c.Abort()
+
 				return
 			}
 		}

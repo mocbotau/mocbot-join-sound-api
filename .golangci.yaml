@@ -1,0 +1,123 @@
+version: "2"
+run:
+  concurrency: 8
+  timeout: 30m
+  issues-exit-code: 1
+  tests: true
+  build-tags:
+    - integration
+  modules-download-mode: readonly
+  allow-parallel-runners: false
+  go: ""
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+  fix: false
+
+linters:
+  default: "none" # we don't want new linters messing up randomly
+  exclusions:
+    rules:
+      - linters:
+          - revive
+        text: "avoid meaningless package"
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - decorder
+    - durationcheck
+    - dupword
+    - errcheck
+    - errname
+    - errorlint
+    - gocritic
+    - godot
+    - gomoddirectives
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - paralleltest
+    - prealloc
+    - predeclared
+    - promlinter
+    - reassign
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - testableexamples
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - wastedassign
+    - wsl_v5
+
+  disable:
+    - containedctx
+    - cyclop
+    - depguard
+    - dogsled
+    - dupl
+    - errchkjson
+    - exhaustive
+    - exhaustruct
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocyclo
+    - godox
+    - goheader
+    - gomodguard
+    - goprintffuncname
+    - grouper
+    - importas
+    - interfacebloat
+    - ireturn
+    - lll
+    - loggercheck
+    - maintidx
+    - makezero
+    - musttag
+    - nestif
+    - nlreturn
+    - nonamedreturns
+    - nosprintfhostport
+    - tagliatelle
+    - varnamelen
+    - whitespace
+    - wrapcheck
+    - wsl
+
+formatters:
+  enable:
+    - gci
+    - gofumpt
+    - goimports
+
+  settings:
+    gci:
+      sections:
+        - "standard"
+        - "default"
+        - "localmodule"

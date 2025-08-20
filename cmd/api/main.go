@@ -43,7 +43,7 @@ func main() {
 	}
 
 	// this folder should be created by the container/kubernetes by default
-	if err := os.MkdirAll(soundsFilePath, 0666); err != nil {
+	if err := os.MkdirAll(soundsFilePath, 0o750); err != nil {
 		log.Fatal("Failed to create data directory:", err)
 	}
 
@@ -74,8 +74,9 @@ func main() {
 
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
@@ -83,7 +84,7 @@ func main() {
 	})
 
 	r.Use(func(c *gin.Context) {
-		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, utils.MAX_PAYLOAD_SIZE)
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, utils.MaxPayloadSize)
 		c.Next()
 	})
 
@@ -105,7 +106,8 @@ func main() {
 	}
 
 	log.Printf("Server starting on port %s", port)
+
 	if err := r.Run(":" + port); err != nil {
-		log.Fatal("Failed to start server:", err)
+		log.Panic("Failed to start server:", err)
 	}
 }

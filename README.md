@@ -139,6 +139,21 @@ go mod tidy
 go run cmd/api/main.go
 ```
 
+### Linting and testing
+
+To ensure code quality, you can run linting and testing commands:
+
+```bash
+# Run linting
+make lint
+
+# Run format
+make fmt
+
+# Run tests
+go test ./...
+```
+
 ### Docker Development
 
 ```bash

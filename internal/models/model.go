@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// User represents a user in a specific guild
+// User represents a user in a specific guild.
 type User struct {
 	ID      string `json:"id" gorm:"type:text;primaryKey;not null"`
 	GuildID int64  `json:"guild_id" gorm:"not null;index"`
@@ -15,7 +15,7 @@ type User struct {
 	Settings *Setting `json:"-" gorm:"foreignKey:UserGuildID"`
 }
 
-// Sound represents an uploaded sound file
+// Sound represents an uploaded sound file.
 type Sound struct {
 	ID               string    `json:"id" gorm:"type:text;primaryKey;not null"`
 	UserGuildID      string    `json:"user_guild_id" gorm:"type:text;not null;index"`
@@ -28,7 +28,7 @@ type Sound struct {
 	Settings []Setting `json:"-" gorm:"foreignKey:ActiveSoundID"`
 }
 
-// Setting represents user settings for sound playback
+// Setting represents user settings for sound playback.
 type Setting struct {
 	UserGuildID   string  `json:"user_guild_id" gorm:"type:text;not null;primaryKey"`
 	ActiveSoundID *string `json:"active_sound_id" gorm:"type:text;index"`
@@ -38,12 +38,12 @@ type Setting struct {
 	ActiveSound Sound `json:"-" gorm:"foreignKey:ActiveSoundID;references:ID"`
 }
 
-// UploadRequest represents a request to upload files
+// UploadRequest represents a request to upload files.
 type UploadRequest struct {
 	Files []*multipart.FileHeader `form:"files"`
 }
 
-// UploadResponse represents a response after uploading files
+// UploadResponse represents a response after uploading files.
 type UploadResponse struct {
 	ID           string `json:"id"`
 	OriginalName string `json:"original_name"`
@@ -51,7 +51,7 @@ type UploadResponse struct {
 	MimeType     string `json:"mime_type"`
 }
 
-// BulkUploadResponse represents a response after bulk uploading files
+// BulkUploadResponse represents a response after bulk uploading files.
 type BulkUploadResponse struct {
 	Status          string            `json:"status"` // "success", "partial", "failure"
 	TotalFiles      int               `json:"total_files"`
@@ -62,14 +62,14 @@ type BulkUploadResponse struct {
 	Message         string            `json:"message"`
 }
 
-// FileError represents an error that occurred during file upload
+// FileError represents an error that occurred during file upload.
 type FileError struct {
 	Filename string `json:"filename"`
 	Error    string `json:"error"`
 	Index    int    `json:"index"`
 }
 
-// UpdateSettingsRequest represents a request to update user settings
+// UpdateSettingsRequest represents a request to update user settings.
 type UpdateSettingsRequest struct {
 	ActiveSoundID *string `json:"active_sound_id"`
 	Mode          *string `json:"mode"`
