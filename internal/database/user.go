@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -9,7 +10,7 @@ import (
 	"github.com/mocbotau/api-join-sound/internal/models"
 )
 
-// CreateOrGetUser creates a new user or returns existing one
+// CreateOrGetUser creates a new user or returns existing one.
 func (db *DB) CreateOrGetUser(guildID, userID int64) (*models.User, error) {
 	var user models.User
 
@@ -20,7 +21,7 @@ func (db *DB) CreateOrGetUser(guildID, userID int64) (*models.User, error) {
 
 	err = db.Where("guild_id = ? AND user_id = ?", guildID, userID).First(&user).Error
 
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		user = models.User{
 			ID:      id,
 			GuildID: guildID,
@@ -37,11 +38,11 @@ func (db *DB) CreateOrGetUser(guildID, userID int64) (*models.User, error) {
 	return &user, nil
 }
 
-// GetUserByUserGuildID retrieves a user by their userGuildID
+// GetUserByUserGuildID retrieves a user by their userGuildID.
 func (db *DB) GetUserByUserGuildID(id string) (*models.User, error) {
 	var user models.User
-	err := db.Where("id = ?", id).First(&user).Error
 
+	err := db.Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -49,7 +50,7 @@ func (db *DB) GetUserByUserGuildID(id string) (*models.User, error) {
 	return &user, nil
 }
 
-// GetSoundsByUser retrieves all sounds for a specific user
+// GetSoundsByUser retrieves all sounds for a specific user.
 func (db *DB) GetSoundsByUser(guildID, userID int64) ([]*models.Sound, error) {
 	user, err := db.CreateOrGetUser(guildID, userID)
 	if err != nil {
@@ -57,10 +58,10 @@ func (db *DB) GetSoundsByUser(guildID, userID int64) ([]*models.Sound, error) {
 	}
 
 	var sounds []*models.Sound
+
 	err = db.Where("user_guild_id = ?", user.ID).
 		Order("created_at DESC").
 		Find(&sounds).Error
-
 	if err != nil {
 		return nil, err
 	}

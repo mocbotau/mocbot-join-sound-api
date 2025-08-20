@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/mocbotau/api-join-sound/internal/models"
 )
 
-// CreateSound creates a new sound record
+// CreateSound creates a new sound record.
 func (db *DB) CreateSound(userGuildID, originalName, internalFilename, mimeType string) (*models.Sound, error) {
 	id, err := gonanoid.New()
 	if err != nil {
@@ -33,7 +34,7 @@ func (db *DB) CreateSound(userGuildID, originalName, internalFilename, mimeType 
 	return &sound, nil
 }
 
-// GetSoundByID retrieves a sound by ID with user relationship
+// GetSoundByID retrieves a sound by ID with user relationship.
 func (db *DB) GetSoundByID(id string) (*models.Sound, error) {
 	var sound models.Sound
 
@@ -45,7 +46,7 @@ func (db *DB) GetSoundByID(id string) (*models.Sound, error) {
 	return &sound, nil
 }
 
-// DeleteSound deletes a sound, updates the active sound if necessary, and returns the new active sound, if any
+// DeleteSound deletes a sound, updates the active sound if necessary, and returns the new active sound, if any.
 func (db *DB) DeleteSound(id string) (deletedSound, newSound *models.Sound, err error) {
 	tx := db.Begin()
 
@@ -56,8 +57,9 @@ func (db *DB) DeleteSound(id string) (deletedSound, newSound *models.Sound, err 
 	}
 
 	var setting models.Setting
+
 	err = tx.Where("active_sound_id = ?", deletedSound.ID).First(&setting).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil, err
 	}
 
@@ -67,7 +69,7 @@ func (db *DB) DeleteSound(id string) (deletedSound, newSound *models.Sound, err 
 			Order("created_at desc").
 			First(&newSound).Error
 
-		if err != nil && err != gorm.ErrRecordNotFound {
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil, err
 		}
 

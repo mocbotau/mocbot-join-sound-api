@@ -1,6 +1,6 @@
-FROM golang:1.25 AS builder
+FROM golang:1.25.0-alpine AS builder
 
-RUN apt-get update && apt-get install -y gcc libc-dev libsqlite3-dev
+RUN apk add --no-cache gcc musl-dev
 
 WORKDIR /app
 
@@ -11,13 +11,12 @@ COPY . .
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -o api ./cmd/api
+    CGO_enabled=0 go build -o api ./cmd/api
 
-FROM debian:bookworm-slim AS release
+FROM alpine:latest AS release
 
-RUN apt-get update && apt-get install -y ca-certificates sqlite3 && rm -rf /var/lib/apt/lists/*
-
-RUN useradd -m -u 10001 -s /bin/bash appuser
+RUN apk add --no-cache ca-certificates
+RUN adduser -D -u 10001 appuser
 
 WORKDIR /app
 

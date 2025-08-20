@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetUserGuildID extracts the guild ID and user ID from the request context
+// GetUserGuildID extracts the guild ID and user ID from the request context.
 func GetUserGuildID(c *gin.Context) (guildID, userID int64, err error) {
 	guildID, err = strconv.ParseInt(c.Param("guildId"), 10, 64)
 	if err != nil {

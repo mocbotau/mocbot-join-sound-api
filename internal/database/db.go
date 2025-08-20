@@ -11,11 +11,12 @@ import (
 	"github.com/mocbotau/api-join-sound/internal/models"
 )
 
+// DB is a wrapper around the GORM database connection.
 type DB struct {
 	*gorm.DB
 }
 
-// NewSQLiteDB creates a new SQLite database connection with GORM
+// NewSQLiteDB creates a new SQLite database connection with GORM.
 func NewSQLiteDB(dataSource string) (*DB, error) {
 	db, err := gorm.Open(sqlite.Open(dataSource), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -23,7 +24,6 @@ func NewSQLiteDB(dataSource string) (*DB, error) {
 			return time.Now().UTC()
 		},
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}

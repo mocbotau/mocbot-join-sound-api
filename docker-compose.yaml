@@ -8,6 +8,8 @@ services:
       - ./.env:/app/.env
     environment:
       - GIN_MODE=debug
+    networks:
+      - api
     restart: unless-stopped
     healthcheck:
       test:
@@ -25,3 +27,6 @@ services:
 
 volumes:
   data:
+
+networks:
+  api:

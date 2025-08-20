@@ -11,7 +11,7 @@ import (
 	"github.com/mocbotau/api-join-sound/internal/utils"
 )
 
-// GetUserSettings returns user settings with active sound details
+// GetUserSettings returns user settings with active sound details.
 func (h *Handler) GetUserSettings(c *gin.Context) {
 	guildID, userID, err := utils.GetUserGuildID(c)
 	if err != nil {
@@ -31,7 +31,7 @@ func (h *Handler) GetUserSettings(c *gin.Context) {
 	})
 }
 
-// UpdateUserSettings updates user settings
+// UpdateUserSettings updates user settings.
 func (h *Handler) UpdateUserSettings(c *gin.Context) {
 	guildID, userID, err := utils.GetUserGuildID(c)
 	if err != nil {
@@ -72,8 +72,8 @@ func (h *Handler) UpdateUserSettings(c *gin.Context) {
 		}
 	}
 
-	if req.Mode != nil && !slices.Contains(utils.ALLOWED_MODES, *req.Mode) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Mode can only be one of: " + strings.Join(utils.ALLOWED_MODES, ", ")})
+	if req.Mode != nil && !slices.Contains(utils.AllowedModes, *req.Mode) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Mode can only be one of: " + strings.Join(utils.AllowedModes, ", ")})
 		return
 	}
 
