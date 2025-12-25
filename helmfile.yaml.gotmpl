@@ -1,0 +1,27 @@
+environments:
+  prod:
+    values:
+      - environment: prod
+
+---
+repositories:
+  - name: chartmuseum
+    url: https://chartmuseum.masterofcubesau.com
+    username: {{ requiredEnv "CHARTMUSEUM_USER" }}
+    password: {{ requiredEnv "CHARTMUSEUM_PASS" }}
+
+helmDefaults:
+  atomic: true
+  cleanupOnFail: true
+  createNamespace: true
+  timeout: 60
+  wait: true
+  waitForJobs: true
+
+releases:
+  - name: mocbot-join-sound-api
+    chart: chartmuseum/generic-app
+    version: 0.3.0
+    namespace: mocbot-join-sound-api-{{ .Environment.Values.environment }}
+    values:
+      - infra/values.yaml.gotmpl

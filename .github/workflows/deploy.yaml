@@ -1,85 +1,14 @@
-name: Build, push, and deploy
+name: Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build and push to Docker Hub
-    runs-on: arc-runner-set
-    outputs:
-      commit-sha: ${{ steps.extractor.outputs.short_sha }}
-      environment: ${{ steps.set-environment.outputs.env }}
-      repo-name: ${{ steps.extractor.outputs.repo_name }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.ORG_DOCKERHUB_USERNAME }}
-          password: ${{ secrets.ORG_DOCKERHUB_TOKEN }}
-
-      - name: Extract repository name and commit SHA
-        id: extractor
-        run: |
-          echo "${{ github.repository }}" | sed -E "s|^.*/(.*)$|repo_name=\1|" | tr "[:upper:]" "[:lower:]" >> $GITHUB_OUTPUT
-          echo "${{ github.sha }}" | sed -E "s|^(.{7}).*$|short_sha=\1|" >> $GITHUB_OUTPUT
-
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.ORG_DOCKERHUB_USERNAME }}/${{ secrets.ORG_DOCKERHUB_REPO }}:${{ steps.extractor.outputs.repo_name }}-prod
-
   deploy:
-    name: Deploy to Kubernetes
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout infrastructure config
-        uses: actions/checkout@v5
-        with:
-          sparse-checkout: infra
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.ORG_DOCKERHUB_USERNAME }}
-          password: ${{ secrets.ORG_DOCKERHUB_TOKEN }}
-
-      - name: Set kube context
-        uses: azure/k8s-set-context@v4
-        with:
-          method: service-account
-          k8s-url: https://kube.masterofcubesau.com:6443
-          k8s-secret: ${{ secrets.ORG_K3S_AUTH_TOKEN }}
-
-      - name: Add internal chartmuseum
-        run: |
-          helm repo add chartmuseum https://chartmuseum.masterofcubesau.com \
-          --username ${{ secrets.ORG_CHARTMUSEUM_USER }} \
-          --password ${{ secrets.ORG_CHARTMUSEUM_PASS }}
-
-      - name: Deploy application to Kubernetes
-        env:
-          REPO_NAME: ${{ needs.build.outputs.repo-name }}
-          COMMIT_SHA: ${{ needs.build.outputs.commit-sha }}
-          DOCKERHUB_USERNAME: ${{ secrets.ORG_DOCKERHUB_USERNAME }}
-          DOCKERHUB_REPO: ${{ secrets.ORG_DOCKERHUB_REPO }}
-          AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
-          AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
-        run: |
-          cat infra/values.yaml | envsubst | \
-          helm upgrade --install "$REPO_NAME" chartmuseum/generic-app --version 0.1.1 \
-            -f - --namespace="$REPO_NAME-prod" --create-namespace \
-            --atomic --cleanup-on-fail --timeout=1m
+    uses: mocbotau/infra-workflows/.github/workflows/generic-deploy.yaml@main
+    with:
+      event-name: ${{ github.event_name }}
+      environment: "prod"
+    secrets: inherit

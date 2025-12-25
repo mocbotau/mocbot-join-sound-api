@@ -1,22 +1,23 @@
 # yaml-language-server: $schema=../../infra-helm-charts/charts/generic-app/values.schema.json
 
 environment: "prod"
-version: "${COMMIT_SHA}"
+version: {{ requiredEnv "COMMIT_SHA" | quote }}
 
 deployments:
   - name: "join-sound-api"
-    image: "${DOCKERHUB_USERNAME}/${DOCKERHUB_REPO}:${REPO_NAME}-prod"
+    image: "mocbotau/cloud:mocbot-join-sound-api-prod"
     service:
       port: 8081
       targetPort: 8081
     environment:
-      AUTH0_AUDIENCE: "${AUTH0_AUDIENCE}"
-      AUTH0_DOMAIN: "${AUTH0_DOMAIN}"
+      AUTH0_AUDIENCE: "https://join-sound-api.masterofcubesau.com"
+      AUTH0_DOMAIN: "mocbot.au.auth0.com"
       DB_PATH: "./data/main.db"
       GIN_MODE: "release"
       SOUNDS_PATH: "./data/sounds"
     ingress:
       subdomain: "join-sound-api"
+      domain: "masterofcubesau.com"
     readinessProbe:
       httpGet:
         path: "/api/v1/ping"
