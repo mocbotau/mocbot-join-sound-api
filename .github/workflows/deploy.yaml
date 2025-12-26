@@ -7,8 +7,9 @@ on:
 
 jobs:
   deploy:
-    uses: mocbotau/infra-workflows/.github/workflows/generic-deploy.yaml@main
+    uses: mocbotau/infra-workflows/.github/workflows/generic-deploy.yaml@v0.1.1
     with:
       event-name: ${{ github.event_name }}
       environment: "prod"
+      repo-name: "mocbot-join-sound-api"
     secrets: inherit

@@ -2,23 +2,25 @@ package main
 
 import (
 	"context"
-	"dagger/mocbot-join-sound-api/internal/dagger"
 
 	"golang.org/x/sync/errgroup"
-)
 
-const (
-	repoName = "mocbot-join-sound-api"
+	"dagger/mocbot-join-sound-api/internal/dagger"
 )
 
 type MocbotJoinSoundApi struct {
+	// Repository name
+	// +private
+	RepoName string
 	// Source code directory
+	// +private
 	Source *dagger.Directory
 	// +private
 	InfisicalClientSecret *dagger.Secret
 }
 
 func New(
+	repoName string,
 	// Source code directory
 	// +defaultPath="."
 	source *dagger.Directory,
@@ -26,6 +28,7 @@ func New(
 	infisicalClientSecret *dagger.Secret,
 ) *MocbotJoinSoundApi {
 	return &MocbotJoinSoundApi{
+		RepoName:              repoName,
 		Source:                source,
 		InfisicalClientSecret: infisicalClientSecret,
 	}
@@ -40,7 +43,7 @@ func (m *MocbotJoinSoundApi) CI(ctx context.Context) error {
 	})
 
 	g.Go(func() error {
-		_, err := dag.Docker(m.Source, m.InfisicalClientSecret, repoName).
+		_, err := dag.Docker(m.Source, m.InfisicalClientSecret, m.RepoName).
 			Build().
 			GetContainer().
 			Sync(ctx)
@@ -57,7 +60,7 @@ func (m *MocbotJoinSoundApi) BuildAndPush(
 	// +default="prod"
 	env string,
 ) (string, error) {
-	return dag.Docker(m.Source, m.InfisicalClientSecret, repoName, dagger.DockerOpts{
+	return dag.Docker(m.Source, m.InfisicalClientSecret, m.RepoName, dagger.DockerOpts{
 		Environment: env,
 	}).Build().Publish(ctx)
 }
